@@ -1,5 +1,7 @@
 import {
   Form,
+  Link,
+  Outlet,
   Scripts,
   ScrollRestoration,
   isRouteErrorResponse,
@@ -7,12 +9,25 @@ import {
 import type { Route } from "./+types/root";
 
 import appStylesHref from "./app.css?url";
+import { getContacts } from "./data";
 
-export default function App() {
+export async function clientLoader() {
+  const contacts = await getContacts();
+  console.log("contacts 1 =>", contacts)
+  return { contacts }
+}
+
+export default function App({
+  loaderData
+}: Route.ComponentProps) {
+  const {contacts} = loaderData;
+
   return (
     <>
       <div id="sidebar">
-        <h1>React Router Contacts</h1>
+        <h1>
+          <Link to="about">React Router Contects</Link>
+        </h1>
         <div>
           <Form id="search-form" role="search">
             <input
@@ -29,15 +44,32 @@ export default function App() {
           </Form>
         </div>
         <nav>
+          {contacts.length ? (
           <ul>
-            <li>
-              <a href={`/contacts/1`}>Your Name</a>
-            </li>
-            <li>
-              <a href={`/contacts/2`}>Your Friend</a>
-            </li>
+            {contacts.map(contact => (
+              <li key={contact.id}>
+                <Link to={`/contacts/${contact.id}`}>
+                  {contact.first || contact.last ? (
+                    <>{contact.first} {contact.last}</>
+                  ): (
+                    <i>No Name</i>
+                  )}
+                  {contact.favorite ? (
+                    <span>★</span>
+                  ): null}
+                </Link>
+              </li>
+            ))}
           </ul>
+          ): (
+            <p>
+              <i>No Contacts</i>
+            </p>
+          )}
         </nav>
+      </div>
+      <div id="detail">
+        <Outlet />
       </div>
     </>
   );
@@ -92,4 +124,13 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
       )}
     </main>
   );
+}
+
+export function HydrateFallback() {
+  return (
+    <div id="loading-splash">
+      <div id="loading-splash-spinner"/>
+      <p>loading, please wait...</p>
+    </div>
+  )
 }
